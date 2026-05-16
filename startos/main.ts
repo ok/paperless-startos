@@ -84,6 +84,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
       subcontainer: paperlessSub,
       exec: {
         command: sdk.useEntrypoint(),
+        runAsInit: true,
         env: {
           PAPERLESS_REDIS: `redis://127.0.0.1:${redisPort}`,
           PAPERLESS_PORT: `${uiPort}`,
