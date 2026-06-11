@@ -1,20 +1,39 @@
-import { randomBytes } from 'node:crypto'
+// Here we define any constants or functions that are shared by multiple components
+// throughout the package codebase. This file will be unnecessary for many packages.
+
+import { sdk } from './sdk'
 
 export const uiPort = 8000
 export const redisPort = 6379
 
-const alphabet =
-  'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+export const dataMountpoint = '/usr/src/paperless/data'
+export const srcDir = '/usr/src/paperless/src'
 
-export function generatePassword(length = 24): string {
-  const bytes = randomBytes(length)
-  let out = ''
-  for (let i = 0; i < length; i++) {
-    out += alphabet[bytes[i] % alphabet.length]
-  }
-  return out
-}
-
-export function generateSecretKey(): string {
-  return randomBytes(48).toString('base64url')
-}
+// Both the main daemon and the set-admin-password action mount the same set of
+// state dirs — Django's startup checks verify all of these paths exist and are
+// writable, so manage.py refuses to run in a container missing any of them.
+export const paperlessMounts = sdk.Mounts.of()
+  .mountVolume({
+    volumeId: 'main',
+    subpath: 'data',
+    mountpoint: dataMountpoint,
+    readonly: false,
+  })
+  .mountVolume({
+    volumeId: 'main',
+    subpath: 'media',
+    mountpoint: '/usr/src/paperless/media',
+    readonly: false,
+  })
+  .mountVolume({
+    volumeId: 'main',
+    subpath: 'consume',
+    mountpoint: '/usr/src/paperless/consume',
+    readonly: false,
+  })
+  .mountVolume({
+    volumeId: 'main',
+    subpath: 'export',
+    mountpoint: '/usr/src/paperless/export',
+    readonly: false,
+  })

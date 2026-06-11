@@ -4,14 +4,19 @@ Paperless-ngx is a document management system that scans, indexes, and archives 
 
 ## First-run setup
 
-1. Wait for the **Web Interface** health check to turn green. The first start may take a minute or two while databases are migrated and OCR resources are unpacked.
-2. From the service page, run the **Get Admin Credentials** action to retrieve the auto-generated username (`admin`) and password.
-3. Open the **Web UI** interface and sign in. After the first login, change the password from the user menu inside Paperless-ngx.
+1. Start the service and wait for the **Web Interface** health check to turn green. The first start may take a minute or two while databases are migrated and OCR resources are unpacked.
+2. Run the **Set Admin Password** action — it is surfaced as a critical task until you do. It generates a password for the `admin` user and displays it once; copy it somewhere safe.
+3. Open the **Web UI** interface and sign in as `admin`.
+
+Forgot your password, or want a new one? Run **Set Admin Password** again at any time — it resets the `admin` password and shows you the new one.
 
 ## Adding documents
 
 - **Web upload**: use the drag-and-drop area in the Paperless-ngx UI.
-- **Consume folder**: drop files into the `consume/` directory inside the package's `main` volume — Paperless-ngx will pick them up automatically.
+- **Email**: configure a mail account under **Settings → Mail** in the Paperless-ngx UI and it will fetch and consume attachments automatically — handy for scanners that scan-to-email.
+- **Mobile apps and API**: any Paperless-ngx-compatible app can upload via the API using your Web UI address and an API token from your user profile.
+
+> **Note**: The watched *consume folder* lives on a volume that is not reachable from other StartOS services or your other devices today, so use one of the methods above instead.
 
 ## Documentation
 

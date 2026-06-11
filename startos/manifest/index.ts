@@ -1,11 +1,11 @@
 import { setupManifest } from '@start9labs/start-sdk'
-import { long, short, alertInstall } from './i18n'
+import { long, short } from './i18n'
 
 export const manifest = setupManifest({
   id: 'paperless-ngx',
   title: 'Paperless-ngx',
   license: 'GPL-3.0',
-  packageRepo: 'https://github.com/ok/paperless-startos',
+  packageRepo: 'https://github.com/Start9-Community/paperless-startos',
   upstreamRepo: 'https://github.com/paperless-ngx/paperless-ngx',
   marketingUrl: 'https://docs.paperless-ngx.com/',
   donationUrl: 'https://github.com/sponsors/paperless-ngx',
@@ -22,7 +22,7 @@ export const manifest = setupManifest({
     },
   },
   alerts: {
-    install: alertInstall,
+    install: null,
     update: null,
     uninstall: null,
     restore: null,
