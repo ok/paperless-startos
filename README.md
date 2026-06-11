@@ -6,7 +6,7 @@
 
 > **Upstream repo:** <https://github.com/paperless-ngx/paperless-ngx>
 
-Paperless-ngx is a community-supported document management system: scan, index, and archive all your documents. This StartOS package bundles the official upstream image with a sidecar Redis broker, generates an admin user on install, and exposes the web UI as a StartOS interface.
+Paperless-ngx is a community-supported document management system: scan, index, and archive all your documents. This StartOS package bundles the official upstream image with a sidecar Redis broker, manages the admin account through a set/reset password action, and exposes the web UI as a StartOS interface.
 
 ## Image and Container Runtime
 
@@ -27,24 +27,24 @@ A single `main` volume holds all persistent state, with these subpaths mounted i
 | ---------- | -------------------------------- | ------------------------------------------ |
 | `data`     | `/usr/src/paperless/data`        | SQLite DB, search index, classifier model  |
 | `media`    | `/usr/src/paperless/media`       | Stored documents and thumbnails            |
-| `consume`  | `/usr/src/paperless/consume`     | Watched folder — drop files here to import |
+| `consume`  | `/usr/src/paperless/consume`     | Watched folder (not user-reachable yet — see Limitations) |
 | `export`   | `/usr/src/paperless/export`      | Document exporter output                   |
-| `store.json` | (read by package code)         | Generated admin credentials and secret key |
+| `store.json` | (read by package code)         | Generated secret key + admin password set via action |
 
 Redis runs in an ephemeral subcontainer with persistence disabled — task state is regenerated on restart.
 
 ## Installation and First-Run Flow
 
-1. Install the package.
-2. The install hook (`seedStore`) generates `adminUser=admin`, a random `adminPassword`, and a random `PAPERLESS_SECRET_KEY` into `store.json`.
-3. On first start, the Paperless container reads `PAPERLESS_ADMIN_USER` / `PAPERLESS_ADMIN_PASSWORD` and creates the superuser automatically.
-4. Run the **Get Admin Credentials** action to retrieve the password, then sign in via the **Web UI** interface.
+1. Install the package. The install hook (`seedStore`) generates a random `PAPERLESS_SECRET_KEY` into `store.json`; no admin password exists yet.
+2. The init watcher (`watchCredentials`) surfaces a **critical task** pointing at the **Set Admin Password** action whenever no password is stored.
+3. Start the service. On first boot the container runs migrations and creates the database — but no superuser (the upstream env-based `manage_superuser` path is unused; it is create-only and cannot rotate, see below).
+4. Run **Set Admin Password**. The action spins up a temporary subcontainer, creates-or-updates the `admin` superuser via `manage.py shell` (`set_password`), stores the password in `store.json` (which clears the task), and displays the credentials. Re-running it any time rotates the password — the same action covers first-set and reset.
 
 ## Actions (StartOS UI)
 
-| Action ID                | What it does                                              |
-| ------------------------ | --------------------------------------------------------- |
-| `get-admin-credentials`  | Display the generated admin username and password.        |
+| Action ID            | What it does                                                                  |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `set-admin-password` | Generate and apply a new password for the `admin` superuser; first-set and reset. Errors with guidance if run before the database has been initialized (first start). |
 
 ## Network Access and Interfaces
 
@@ -66,6 +66,7 @@ The `paperless` daemon `requires: ['redis']`, so the broker is up before the web
 - The package uses **SQLite**, not PostgreSQL. Suitable for personal archives; large libraries should consider Postgres (not yet packaged here).
 - Redis runs as an in-package sidecar, not as a separate StartOS service.
 - Gotenberg and Tika (optional document preprocessors for non-PDF formats) are not bundled.
+- The watched `consume/` folder is mounted but there is no user-facing way to place files in it on StartOS yet (no SMB/file-manager access to service volumes). Document ingestion happens via web upload, the API, or Paperless-ngx's built-in mail fetcher. A File Browser dependency mount (the jellyfin/audiobookshelf pattern) is the candidate future integration — see `TODO.md`.
 
 ## Backups and Restore
 

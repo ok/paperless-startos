@@ -13,10 +13,17 @@ const dict = {
   'Web UI': 6,
   'The Paperless-ngx web interface': 7,
 
-  // actions/getAdminCredentials.ts
-  'Get Admin Credentials': 8,
-  'Retrieve the initial admin username and password for the Paperless-ngx web UI.': 9,
-  'These credentials were generated on install. Change the password from inside Paperless-ngx after first login.': 10,
+  // actions/setAdminPassword.ts
+  'Set Admin Password': 8,
+  'Generate a new password for the Paperless-ngx "admin" user. Run this action to set the initial password or to reset a forgotten one.': 9,
+  "Paperless-ngx hasn't initialized its database yet. Start the service, wait for the Web Interface health check to pass, then run this action again.": 10,
+  'Admin Credentials': 11,
+  'Use these credentials to sign in to Paperless-ngx.': 12,
+  Username: 13,
+  Password: 14,
+
+  // init/watchCredentials.ts
+  'Set the admin password before signing in to Paperless-ngx': 15,
 } as const
 
 /**

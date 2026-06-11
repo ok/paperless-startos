@@ -1,62 +1,28 @@
+import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
-import { storeJson } from './fileModels/store.json'
-import { uiPort, redisPort } from './utils'
-
-const dataMountpoint = '/usr/src/paperless/data'
-const mediaMountpoint = '/usr/src/paperless/media'
-const consumeMountpoint = '/usr/src/paperless/consume'
-const exportMountpoint = '/usr/src/paperless/export'
+import { paperlessMounts, redisPort, uiPort } from './utils'
 
 export const main = sdk.setupMain(async ({ effects }) => {
-  const store = await storeJson.read((s) => s).const(effects)
+  const secretKey = await storeJson.read((s) => s.secretKey).const(effects)
+  if (!secretKey) {
+    throw new Error('store.json is missing the generated secret key')
+  }
 
-  const trustedOrigins =
+  const trustedOrigins = (
     (await sdk.serviceInterface
       .getOwn(effects, 'ui', (i) => i?.addressInfo?.format('urlstring') ?? [])
       .const()) || []
-
-  const redisSub = await sdk.SubContainer.of(
-    effects,
-    { imageId: 'redis' },
-    null,
-    'paperless-redis',
-  )
-
-  const paperlessSub = await sdk.SubContainer.of(
-    effects,
-    { imageId: 'paperless' },
-    sdk.Mounts.of()
-      .mountVolume({
-        volumeId: 'main',
-        subpath: 'data',
-        mountpoint: dataMountpoint,
-        readonly: false,
-      })
-      .mountVolume({
-        volumeId: 'main',
-        subpath: 'media',
-        mountpoint: mediaMountpoint,
-        readonly: false,
-      })
-      .mountVolume({
-        volumeId: 'main',
-        subpath: 'consume',
-        mountpoint: consumeMountpoint,
-        readonly: false,
-      })
-      .mountVolume({
-        volumeId: 'main',
-        subpath: 'export',
-        mountpoint: exportMountpoint,
-        readonly: false,
-      }),
-    'paperless-app',
-  )
+  ).join(',')
 
   return sdk.Daemons.of(effects)
     .addDaemon('redis', {
-      subcontainer: redisSub,
+      subcontainer: await sdk.SubContainer.of(
+        effects,
+        { imageId: 'redis' },
+        null,
+        'paperless-redis',
+      ),
       exec: {
         command: sdk.useEntrypoint([
           'redis-server',
@@ -81,20 +47,22 @@ export const main = sdk.setupMain(async ({ effects }) => {
       requires: [],
     })
     .addDaemon('paperless', {
-      subcontainer: paperlessSub,
+      subcontainer: await sdk.SubContainer.of(
+        effects,
+        { imageId: 'paperless' },
+        paperlessMounts,
+        'paperless-app',
+      ),
       exec: {
         command: sdk.useEntrypoint(),
         runAsInit: true,
         env: {
           PAPERLESS_REDIS: `redis://127.0.0.1:${redisPort}`,
           PAPERLESS_PORT: `${uiPort}`,
-          PAPERLESS_SECRET_KEY: store?.secretKey ?? '',
-          PAPERLESS_ADMIN_USER: store?.adminUser ?? 'admin',
-          PAPERLESS_ADMIN_PASSWORD: store?.adminPassword ?? '',
-          PAPERLESS_ADMIN_MAIL: 'admin@localhost',
+          PAPERLESS_SECRET_KEY: secretKey,
           PAPERLESS_ALLOWED_HOSTS: '*',
-          PAPERLESS_CORS_ALLOWED_HOSTS: trustedOrigins.join(','),
-          PAPERLESS_CSRF_TRUSTED_ORIGINS: trustedOrigins.join(','),
+          PAPERLESS_CORS_ALLOWED_HOSTS: trustedOrigins,
+          PAPERLESS_CSRF_TRUSTED_ORIGINS: trustedOrigins,
           PAPERLESS_TIME_ZONE: 'UTC',
           PAPERLESS_OCR_LANGUAGE: 'eng',
           USERMAP_UID: '1000',

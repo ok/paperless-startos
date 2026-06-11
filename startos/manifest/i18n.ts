@@ -18,16 +18,3 @@ export const long = {
   fr_FR:
     "Paperless-ngx numérise, indexe et archive vos documents papier afin de retrouver n'importe quoi en quelques secondes. Il effectue l'OCR, organise par étiquettes et correspondants et propose une interface web rapide et recherchable.",
 }
-
-export const alertInstall = {
-  en_US:
-    'After installation, run the "Get Admin Credentials" action to retrieve your initial username and password.',
-  es_ES:
-    'Después de la instalación, ejecuta la acción "Obtener credenciales de administrador" para recuperar tu usuario y contraseña iniciales.',
-  de_DE:
-    'Führe nach der Installation die Aktion "Admin-Zugangsdaten abrufen" aus, um deinen anfänglichen Benutzernamen und dein Passwort zu erhalten.',
-  pl_PL:
-    'Po instalacji uruchom akcję „Pobierz dane administratora", aby otrzymać początkową nazwę użytkownika i hasło.',
-  fr_FR:
-    "Après l'installation, exécutez l'action « Obtenir les identifiants admin » pour récupérer votre nom d'utilisateur et votre mot de passe initiaux.",
-}

@@ -8,7 +8,10 @@ INGREDIENTS := $(shell start-cli s9pk list-ingredients 2>/dev/null)
 GIT_DIR := $(shell git rev-parse --git-dir 2>/dev/null)
 GIT_DEPS := $(if $(GIT_DIR),$(GIT_DIR)/HEAD $(GIT_DIR)/index)
 ARCHES ?= x86 arm riscv
-TARGETS ?= arches
+# TARGETS is the list of leaf make-targets the build matrix fans out over.
+# Defaults to the arches; variant packages override (e.g. immich, ollama, vllm
+# set this to a list of variant or variant-arch leaf targets).
+TARGETS ?= $(ARCHES)
 ifdef VARIANT
 BASE_NAME := $(PACKAGE_ID)_$(VARIANT)
 else
@@ -44,6 +47,12 @@ all: $(TARGETS)
 
 arches: $(ARCHES)
 
+# Generic make-variable introspection. Used by the release workflow to
+# read $(TARGETS) and fan out one matrix runner per target. `make -s
+# print-TARGETS` echoes the list with no other output.
+print-%:
+	@echo '$($*)'
+
 universal: $(BASE_NAME).s9pk
 	$(call SUMMARY,$<)
 
@@ -73,11 +82,11 @@ install: | check-deps check-init
 		echo "Error: You must define \"host: http://server-name.local\" in ~/.startos/config.yaml"; \
 		exit 1; \
 	fi; \
-	S9PK=$$(ls -t *.s9pk 2>/dev/null | head -1); \
-	if [ -z "$$S9PK" ]; then \
+	if [ -z "$$(ls *.s9pk 2>/dev/null)" ]; then \
 		echo "Error: No .s9pk file found. Run 'make' first."; \
 		exit 1; \
 	fi; \
+	S9PK=$$(start-cli s9pk select) || exit 1; \
 	printf "\n🚀 Installing %s to %s ...\n" "$$S9PK" "$$HOST"; \
 	start-cli package install -s "$$S9PK"
 
@@ -121,11 +130,8 @@ javascript/index.js: $(shell find startos -type f) tsconfig.json node_modules
 	npm run check
 	npm run build
 
-node_modules: package-lock.json
+node_modules: package-lock.json package.json
 	npm ci
-
-package-lock.json: package.json
-	npm i
 
 clean:
 	@echo "Cleaning up build artifacts..."
