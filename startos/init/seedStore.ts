@@ -1,12 +1,16 @@
-import { sdk } from '../sdk'
+import { utils } from '@start9labs/start-sdk'
 import { storeJson } from '../fileModels/store.json'
-import { generatePassword, generateSecretKey } from '../utils'
+import { sdk } from '../sdk'
 
 export const seedStore = sdk.setupOnInit(async (effects, kind) => {
-  if (kind !== 'install') return
-  await storeJson.merge(effects, {
-    adminUser: 'admin',
-    adminPassword: generatePassword(),
-    secretKey: generateSecretKey(),
-  })
+  if (kind === 'install') {
+    await storeJson.merge(effects, {
+      secretKey: utils.getDefaultString({
+        charset: 'a-z,A-Z,0-9',
+        len: 64,
+      }),
+    })
+  } else {
+    await storeJson.merge(effects, {})
+  }
 })
